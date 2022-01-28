@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from datetime import datetime, date
-from reports import payments
+from reports import *
 import mysql.connector
 
 # connect mysql server
@@ -13,6 +12,8 @@ cnx = mysql.connector.connect(
   database = "billing"
 )
 
+pay_type.report()
 payments.report(cnx.cursor(buffered=True), full=True)
+regions.report()
 
 print("Done")
