@@ -4,15 +4,14 @@
 from datetime import date, timedelta
 import mysql.connector
 
+#from reports.static import pay_type
+#from reports.static import regions
+#from reports.static import sups
+# from reports.billing import ip_plan
 from reports.billing import payments
 from reports.billing import abonent
 from reports.billing import abonent_addr
 from reports.billing import abonent_ident
-from reports.billing import ip_plan
-from reports.static import pay_type
-from reports.static import regions
-from reports.static import doc_type
-from reports.static import sups
 
 print("Do FULL reports:", date.today() - timedelta(days=1))
 
@@ -28,23 +27,14 @@ db = mysql.connector.connect(
     password="lbpay",
     database="billing"
 )
+db.autocommit = True
 print(">>>> Connect to db: " + db.database)
-print("static:")
-doc_type.report()
-pay_type.report()
-regions.report()
-sups.report()
 
 try:
-    cursor = db.cursor()
-    cursor.callproc('SORM_ABONENTS')
-    cursor.close()
-
-    abonent.report_full(db)
+    abonent.report_daily(db)
     abonent_addr.report(db)
-    payments.report_full(db)
-    abonent_ident.report_full(db)
-    ip_plan.report_full(db)
+    abonent_ident.report_daily(db)
+    payments.report_daily(db)
 
 except mysql.connector.Error as error:
     print("Failed to execute: {}".format(error))

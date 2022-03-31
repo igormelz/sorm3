@@ -1,4 +1,4 @@
-from reports.utils import writer
+from reports.utils import writer, format_filename
 
 # report name format
 FORMAT = 'PAY_TYPE_%Y%m%d_%H%M.txt'
@@ -6,7 +6,7 @@ FIELDS = ['ID', 'BEGIN_TIME', 'END_TIME', 'DESCRIPTION', 'REGION_ID']
 
 def report():
     print("STATIC: PAY_TYE ........ ", end='')
-    with writer(FORMAT, FIELDS) as csvout:
+    with writer(format_filename(FORMAT), FIELDS) as csvout:
         csvout.writerow({'ID': 1, 'BEGIN_TIME': '2019-01-01',
                         'END_TIME': '2024-12-31', 'DESCRIPTION': 'Платеж по эквайрингу', 'REGION_ID': 1})
         csvout.writerow({'ID': 2, 'BEGIN_TIME': '2019-01-01',

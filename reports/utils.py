@@ -2,11 +2,12 @@ import csv
 from datetime import datetime
 from contextlib import contextmanager
 
-e164 = lambda p: p[1:] if p[0] == '+' else p
+def format_filename(FORMAT):
+    return datetime.now().strftime(FORMAT)
 
 @contextmanager
-def writer(FORMAT,FIELDS):
-    csvfile = open(datetime.now().strftime(FORMAT), 'w')
+def writer(filename,FIELDS):
+    csvfile = open(filename, 'w')
     writer = csv.DictWriter(csvfile, FIELDS, delimiter=';', lineterminator='\n')
     writer.writeheader()
     yield writer
@@ -18,3 +19,8 @@ def cursor(connection):
     yield cur
     cur.close()
 
+@contextmanager
+def cursorDef(connection):
+    cur = connection.cursor()
+    yield cur
+    cur.close()

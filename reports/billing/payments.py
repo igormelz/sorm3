@@ -1,5 +1,6 @@
-from reports.utils import writer, cursor, e164
+from reports.utils import writer, cursor, format_filename
 from datetime import date, timedelta
+import re
 
 FORMAT = 'PAYMENTS_%Y%m%d_%H%M.txt'
 FIELDS = [
@@ -44,27 +45,28 @@ FIELDS = [
     'unstruct_info',
     'RECORD_ACTION'
 ]
-SELECT = ("SELECT pay_date,amount,number,a.uid,name,mobile,address,cash_code "
-          "FROM payments p "
-          "INNER JOIN agreements a USING(agrm_id) "
-          "INNER JOIN accounts u USING(uid) "
-          "INNER JOIN accounts_addr d ON(u.uid = d.uid AND d.type = 0)")
 
+QUERY_FULL = '''
+SELECT CONVERT_TZ(p.pay_date,'+03:00','+00:00') as pay_date, p.amount, a.contract, a.abonentId, u.name, ifnull(u.mobile,'') mobile, d.address, p.cash_code 
+FROM sorm a
+INNER JOIN payments p ON a.contractId = p.agrm_id 
+INNER JOIN accounts u ON u.uid = a.abonentId 
+INNER JOIN accounts_addr d ON(u.uid = d.uid AND d.type = 0)
+WHERE a.record_action != 3
+'''
 
-def query(full):
-    if full == True:
-        # return all until today
-        return SELECT + " WHERE pay_date < '" + str(date.today()) + "'"
-    else:
-        # return yesterday
-        return SELECT + " WHERE DATE(pay_date) = '" + str(date.today() - timedelta(days=1)) + "'"
+AGG_PATTERN = re.compile(r'-.*')
+PHONE_PATTERN = re.compile(r'^\+')
 
+def report_daily(db):
+    report_full(db, " AND p.pay_date >= (select COALESCE(max(batch_time),current_timestamp) from sorm_batch where batch_name='payment')")
 
-def report(db, full=False):
-    print("BILLING: PAYMENTS ...... ", end='')
+def report_full(db, params=''):
     with cursor(db) as cur:
-        cur.execute(query(full))
-        with writer(FORMAT, FIELDS) as csvout:
+        cur.execute(QUERY_FULL + params)
+        print(">>>> query full payments [{0}]".format(cur.rowcount))
+        filename = format_filename(FORMAT)
+        with writer(filename, FIELDS) as csvout:
             for dataRowDict in cur:
                 # map output record:
                 outRow = {
@@ -74,13 +76,18 @@ def report(db, full=False):
                     'payment_date': dataRowDict.get('pay_date'),
                     'amount': dataRowDict.get('amount'),
                     'amount_CURRENCY': f"{dataRowDict.get('amount'):.2f}",
-                    'account': dataRowDict.get('number'),
-                    'phone_number': e164(dataRowDict.get('mobile')),
-                    'ABONENT_ID': dataRowDict.get('uid'),
+                    'account': AGG_PATTERN.sub('', dataRowDict.get('contract')),
+                    # 'phone_number': PHONE_PATTERN.sub('', dataRowDict.get('mobile')),
+                    'phone_number': '790000000',
+                    'ABONENT_ID': dataRowDict.get('abonentId'),
                     'address_type_id': 0,  # use registered address
                     'address_type': 1,  # unstructed address
                     'unstruct_info': dataRowDict.get('address'),
                     'RECORD_ACTION': 1,
                 }
                 csvout.writerow(outRow)
-    print("FULL" if full else "INCR")
+        # store batch info 
+        print("PAYMENTS: {0} [{1}]".format(filename, cur.rowcount))
+        cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('payment', filename, cur.rowcount))
+        db.commit()
+
