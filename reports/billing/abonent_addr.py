@@ -54,4 +54,5 @@ def report(db):
         print("ADDR: {0} [{1}]".format(filename, cur.rowcount))           
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('addr', filename, cur.rowcount))
         db.commit()
+    return filename
 

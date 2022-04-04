@@ -49,17 +49,17 @@ FIELDS = [
 QUERY_FULL = '''
 SELECT CONVERT_TZ(p.pay_date,'+03:00','+00:00') as pay_date, p.amount, a.contract, a.abonentId, u.name, ifnull(u.mobile,'') mobile, d.address, p.cash_code 
 FROM sorm a
-INNER JOIN payments p ON a.contractId = p.agrm_id 
+INNER JOIN payments p ON (a.contractId = p.agrm_id AND a.record_action != 3)
 INNER JOIN accounts u ON u.uid = a.abonentId 
 INNER JOIN accounts_addr d ON(u.uid = d.uid AND d.type = 0)
-WHERE a.record_action != 3
 '''
 
 AGG_PATTERN = re.compile(r'-.*')
 PHONE_PATTERN = re.compile(r'^\+')
 
 def report_daily(db):
-    report_full(db, " AND p.pay_date >= (select COALESCE(max(batch_time),current_timestamp) from sorm_batch where batch_name='payment')")
+    return report_full(db, (" WHERE p.pay_date >= (select COALESCE(max(batch_time),current_timestamp) from sorm_batch where batch_name='payment')"
+                            " OR a.record_action = 1"))
 
 def report_full(db, params=''):
     with cursor(db) as cur:
@@ -90,4 +90,4 @@ def report_full(db, params=''):
         print("PAYMENTS: {0} [{1}]".format(filename, cur.rowcount))
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('payment', filename, cur.rowcount))
         db.commit()
-
+    return filename

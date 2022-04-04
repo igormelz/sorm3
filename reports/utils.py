@@ -2,6 +2,8 @@ import csv
 from datetime import datetime
 from contextlib import contextmanager
 
+
+
 def format_filename(FORMAT):
     return datetime.now().strftime(FORMAT)
 
@@ -24,3 +26,5 @@ def cursorDef(connection):
     cur = connection.cursor()
     yield cur
     cur.close()
+
+

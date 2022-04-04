@@ -65,7 +65,8 @@ INNER JOIN (SELECT DISTINCT(abonentId) uid FROM sorm WHERE record_action !=3) s 
 '''
 
 def report_daily(db):
-    report_full(db, " WHERE i.last_mod_date >= (select COALESCE(max(batch_time),current_timestamp) from sorm_batch where batch_name='ident')")
+    return report_full(db, (" WHERE i.last_mod_date >= (select COALESCE(max(batch_time),current_timestamp) from sorm_batch where batch_name='ident')"
+                            " OR EXISTS (SELECT abonentId FROM sorm s WHERE s.abonentId = v.uid AND record_action = 1)"))
 
 def report_full(db, params=''):
     with cursor(db) as cur:
@@ -93,4 +94,4 @@ def report_full(db, params=''):
         print("IDENT: {0} [{1}]".format(filename, cur.rowcount))
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('ident', filename, cur.rowcount))
         db.commit()
-
+    return filename

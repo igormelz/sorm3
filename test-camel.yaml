@@ -1,0 +1,15 @@
+#!/usr/bin/env jbang camel@apache/camel run camel --dep=commons-dbcp:commons-dbcp:1.4
+- beans:
+  - name: "dataSource"
+    type: "org.apache.commons.dbcp2.BasicDataSource"
+    properties:
+     driverClassName: "com.mysql.cj.jdbc.Driver"
+     username: "lbpay"
+     password: "lbpay"
+     url: "jdbc:mysql://100.100.10.11:3306/billing"
+- from:
+      uri: "sql:select * from sorm_batch"
+      parameters:
+          delay: 3000
+      steps:
+          - log: "${body[batch_name]}"

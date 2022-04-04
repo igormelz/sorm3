@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from datetime import date, timedelta
 import mysql.connector
 
 from reports.billing import payments
@@ -14,12 +13,7 @@ from reports.static import regions
 from reports.static import doc_type
 from reports.static import sups
 
-print("Do FULL reports:", date.today() - timedelta(days=1))
-
-# report static
-# sups.report()
-# pay_type.report()
-# regions.report()
+print("Do FULL reports:")
 
 # connect mysql server
 db = mysql.connector.connect(
@@ -29,7 +23,7 @@ db = mysql.connector.connect(
     database="billing"
 )
 print(">>>> Connect to db: " + db.database)
-print("static:")
+
 doc_type.report()
 pay_type.report()
 regions.report()

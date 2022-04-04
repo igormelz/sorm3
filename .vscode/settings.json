@@ -1,0 +1,7 @@
+{
+    "yaml.completion": true,
+    "yaml.format.enable": true,
+    "yaml.schemas": {
+        "https://raw.githubusercontent.com/apache/camel/main/dsl/camel-yaml-dsl/camel-yaml-dsl/src/generated/resources/camel-yaml-dsl.json": "file:///home/igorm/sorm3/test-camel.yaml"
+    }
+}
