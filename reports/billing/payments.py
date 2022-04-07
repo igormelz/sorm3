@@ -1,6 +1,7 @@
 from reports.utils import writer, cursor, format_filename
 from datetime import date, timedelta
 import re
+import logging
 
 FORMAT = 'PAYMENTS_%Y%m%d_%H%M.txt'
 FIELDS = [
@@ -64,7 +65,7 @@ def report_daily(db):
 def report_full(db, params=''):
     with cursor(db) as cur:
         cur.execute(QUERY_FULL + params)
-        print(">>>> query full payments [{0}]".format(cur.rowcount))
+        logging.info("query full payments [{0}]".format(cur.rowcount))
         filename = format_filename(FORMAT)
         with writer(filename, FIELDS) as csvout:
             for dataRowDict in cur:
@@ -87,7 +88,7 @@ def report_full(db, params=''):
                 }
                 csvout.writerow(outRow)
         # store batch info 
-        print("PAYMENTS: {0} [{1}]".format(filename, cur.rowcount))
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('payment', filename, cur.rowcount))
+        logging.info("flush filename: {0} [{1}]".format(filename, cur.rowcount))
         db.commit()
     return filename

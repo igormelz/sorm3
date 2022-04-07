@@ -13,7 +13,10 @@ from reports.static import regions
 from reports.static import doc_type
 from reports.static import sups
 
-print("Do FULL reports:")
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s [%(module)s]: %(message)s')
+logging.info("Start full reports")
 
 # connect mysql server
 db = mysql.connector.connect(

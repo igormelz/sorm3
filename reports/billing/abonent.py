@@ -1,6 +1,7 @@
 from reports.utils import writer, cursor, cursorDef, format_filename
 from datetime import date
 import re
+import logging
 
 FORMAT = 'ABONENT_%Y%m%d_%H%M.txt'
 FIELDS = [
@@ -83,39 +84,40 @@ def report_daily(db):
     with cursorDef(db) as cur:
         # do preprocessing
         cur.execute(DEL_CLOSE)
-        print(">>>> drop close contract [{0}]".format(cur.rowcount))
+        logging.info(f"drop close contracts [{cur.rowcount}]")
         cur.execute(DEL_UPDATE)
-        print(">>>> drop remove record [{0}]".format(cur.rowcount))
+        logging.info(f"drop removed contracts [{cur.rowcount}]")
         cur.execute(UPD_BATCH)
-        print(">>>> mark record as processed [{0}]".format(cur.rowcount))
+        logging.info(f"mark processed contracts [{cur.rowcount}]")
 
     with cursor(db) as cur:
 
         # get new and changed contracts
         cur.execute(QUERY_AGRM)
         contracts = cur.fetchall()
-        print(">>>> query contracts [{0}]".format(cur.rowcount))
+        logging.info(f"select contracts to process [{cur.rowcount}]")
 
         # process contracts
         for agrm in contracts:
 
             if agrm.get('contractState') == None:
                 # get new contract details
-                ret = cur.callproc('SORM_PROC', (agrm.get('agrm_id'), agrm.get('state'), agrm.get('date'), agrm.get('number'),
-                                                 agrm.get('uid'), agrm.get('type'), agrm.get('sole_proprietor'), agrm.get('inn'), agrm.get('pn'), agrm.get('sn'), 0, 0, 0, 0))
+                ret = cur.callproc('SORM_PROC',
+                                   (agrm.get('agrm_id'), agrm.get('state'), agrm.get('date'), agrm.get('number'),
+                                    agrm.get('uid'), agrm.get('type'), agrm.get('sole_proprietor'), agrm.get('inn'), agrm.get('pn'), agrm.get('sn'), 0, 0, 0, 0))
 
                 if ret.get('@_SORM_PROC_arg14') == None and ret.get('@_SORM_PROC_arg13') == None:
                     cur.execute(INS_CONTRACT, (agrm.get('agrm_id'), agrm.get('state'), agrm.get('date'), agrm.get(
                         'number'), agrm.get('uid'), ret.get('@_SORM_PROC_arg11'), ret.get('@_SORM_PROC_arg12')))
-                    print(">>> %s new: %s" % (agrm.get('number'), 'add to report'))
+                    logging.info("contract %s new: %s" % (agrm.get('number'), 'add to report'))
 
                 elif ret.get('@_SORM_PROC_arg14') == None and ret.get('@_SORM_PROC_arg13') != None:
                     # insert waiting
                     cur.execute(INS_WAIT, (agrm.get('agrm_id'), agrm.get('state'), agrm.get(
                         'date'), agrm.get('number'), agrm.get('uid'), ret.get('@_SORM_PROC_arg13'), 1, 3))
-                    print('>>> %s new: %s' % (agrm.get('number'), 'set wait'))
+                    logging.info('contract %s new: %s: reason:%s' % (agrm.get('number'), 'set wait', ret.get('@_SORM_PROC_arg13')))
                 else:
-                    print('>>> %s new: %s' % (agrm.get('number'), 'skip with no login yet'))
+                    logging.info('contract %s new: %s' % (agrm.get('number'), 'skip with no login yet'))
 
             elif agrm.get('hasReason') == 1:
                 # get contract details for change reason
@@ -126,14 +128,14 @@ def report_daily(db):
                     # update to report
                     cur.execute(UPD_REASON_OK, {'contractId': agrm.get('agrm_id'), 'attach': ret.get(
                         '@_SORM_PROC_arg11'), 'detach': ret.get('@_SORM_PROC_arg12')})
-                    print('>>> %s reason: %s' % (agrm.get('number'), 'clear, record add to report'))
+                    logging.info('contract %s reason: %s' % (agrm.get('number'), 'clear, record add to report'))
 
                 elif ret.get('@_SORM_PROC_arg14') == None and ret.get('@_SORM_PROC_arg13') != None and agrm.get('reason') != ret.get('@_SORM_PROC_arg13'):
                     cur.execute(UPD_REASON, {'contractId': agrm.get('agrm_id'), 'reason': ret.get('@_SORM_PROC_arg13')})
-                    print('>>> %s reason: %s (%s -> %s)' % (agrm.get('number'), 'change', agrm.get('reason'), ret.get('@_SORM_PROC_arg13')))
+                    logging.info('contract %s reason: %s (%s -> %s)' % (agrm.get('number'), 'change', agrm.get('reason'), ret.get('@_SORM_PROC_arg13')))
 
                 else:
-                    print('!!! %s reason: %s' % (agrm.get('number'), 'skip'))
+                    logging.warning('contract %s reason: %s' % (agrm.get('number'), 'same. record skip'))
 
             elif agrm.get('state') == 2 and agrm.get('contractState') == 0:
                 # contract close
@@ -146,13 +148,13 @@ def report_daily(db):
                     # insert close contract
                     cur.execute(INS_CONTRACT, (agrm.get('agrm_id'), agrm.get('state'), agrm.get('date'), agrm.get(
                         'number'), agrm.get('uid'), ret.get('@_SORM_PROC_arg11'), ret.get('@_SORM_PROC_arg12')))
-                    print('>>> %s close: %s' % (agrm.get('number'), 'add'))
+                    logging.info('contract %s close: %s' % (agrm.get('number'), 'add'))
 
                 else:
-                    print('!!! %s close: %s' % (agrm.get('number'), 'skip by has reason'))
+                    logging.warning('contract %s close: %s' % (agrm.get('number'), 'skip by has reason'))
 
             else:
-                print("!!! %s skip" % agrm.get('number'))
+                logging.warning("contract %s skip" % agrm.get('number'))
     db.commit()
     return report_full(db)
 
@@ -161,7 +163,7 @@ def report_full(db):
     ''' report full '''
     with cursor(db) as cur:
         cur.execute(QUERY_FULL)
-        print(">>>> query full contracts [{0}]".format(cur.rowcount))
+        logging.info("process query full contracts [{0}]".format(cur.rowcount))
 
         filename = format_filename(FORMAT)
         with writer(filename, FIELDS) as csvout:
@@ -182,16 +184,16 @@ def report_full(db):
                 if(row.get('type') == 2 and row.get('sole_proprietor') == 0):
                     out['ABONENT_TYPE'] = "42"
                     out['NAME_INFO_TYPE'] = 1  # unstructed name
-                    out['UNSTRUCT_NAME'] = ANON_NAME.sub(
-                        r'\1*', row.get('name'))  # fix!!!
-                    # out['BIRTH_DATE'] = row.get('birthdate')
-                    out['BIRTH_DATE'] = '1990-01-01'  # delete
+                    out['UNSTRUCT_NAME'] = row.get('name') 
+                    #out['UNSTRUCT_NAME'] = ANON_NAME.sub(r'\1*', row.get('name'))  # fix!!!
+                    out['BIRTH_DATE'] = row.get('birthdate')
+                    #out['BIRTH_DATE'] = '1990-01-01'  # delete
                     out['IDENT_CARD_TYPE_ID'] = row.get('doc_type')
                     out['IDENT_CARD_TYPE'] = 0  # structed
-                    out['IDENT_CARD_SERIAL'] = ANON_NUM.sub(
-                        '0', row.get('pass_sernum'))  # fix!!!
-                    out['IDENT_CARD_NUMBER'] = ANON_NUM.sub(
-                        '0', row.get('pass_no'))  # fix!!!
+                    #out['IDENT_CARD_SERIAL'] = ANON_NUM.sub('0', row.get('pass_sernum'))  # fix!!!
+                    out['IDENT_CARD_SERIAL'] = row.get('pass_sernum') 
+                    #out['IDENT_CARD_NUMBER'] = ANON_NUM.sub('0', row.get('pass_no'))  # fix!!!
+                    out['IDENT_CARD_NUMBER'] = row.get('pass_no') 
                     out['IDENT_CARD_DESCRIPTION'] = row.get('pass_descr')
                 else:
                     out['ABONENT_TYPE'] = "43"
@@ -204,8 +206,8 @@ def report_full(db):
                 csvout.writerow(out)
         
         # store batch info
-        print("ABONENT: {0} [{1}]".format(filename, cur.rowcount))
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)",
                     ('abonent', filename, cur.rowcount))
+        logging.info("flush filename:{0} [{1}]".format(filename, cur.rowcount))
         db.commit()
     return filename

@@ -1,6 +1,7 @@
 from reports.utils import writer, cursor, format_filename
 from datetime import date, timedelta
 import re
+import logging
 
 MAC_PATTERN = re.compile(r':')
 LOGIN_PATTERN = re.compile(r'-\d{4}-\d{2}-\d{2}[_ ]\d{2}:\d{2}:\d{2}')
@@ -71,7 +72,7 @@ def report_daily(db):
 def report_full(db, params=''):
     with cursor(db) as cur:
         cur.execute(QUERY_FULL + params)
-        print(">>>> query full ident [{0}]".format(cur.rowcount))
+        logging.info("query full ident [{0}]".format(cur.rowcount))
         filename = format_filename(FORMAT)
         with writer(filename, FIELDS) as csvout:
             for row in cur:
@@ -91,7 +92,7 @@ def report_full(db, params=''):
                 }
                 csvout.writerow(outRow)
         # store batch info 
-        print("IDENT: {0} [{1}]".format(filename, cur.rowcount))
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('ident', filename, cur.rowcount))
+        logging.info("flush filename: {0} [{1}]".format(filename, cur.rowcount))
         db.commit()
     return filename

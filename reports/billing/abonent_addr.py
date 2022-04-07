@@ -1,5 +1,6 @@
 from reports.utils import writer, cursor, format_filename
 from datetime import date, timedelta
+import logging
 
 FORMAT = 'ABONENT_ADDR_%Y%m%d_%H%M.txt'
 FIELDS = [
@@ -35,7 +36,7 @@ def report(db):
 
     with cursor(db) as cur:
         cur.execute(QUERY_FULL)
-        print(">>>> query full addr [{0}]".format(cur.rowcount))
+        logging.info("query full addr [{0}]".format(cur.rowcount))
         filename = format_filename(FORMAT)
         with writer(filename, FIELDS) as csvout:
             for row in cur:
@@ -51,8 +52,8 @@ def report(db):
                 }
                 csvout.writerow(outRow)
         # store batch info 
-        print("ADDR: {0} [{1}]".format(filename, cur.rowcount))           
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('addr', filename, cur.rowcount))
+        logging.info("flush filename: {0} [{1}]".format(filename, cur.rowcount))           
         db.commit()
     return filename
 
