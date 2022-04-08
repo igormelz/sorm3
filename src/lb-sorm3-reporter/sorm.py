@@ -35,10 +35,10 @@ logging.info(f"connect to ftp: {ftp_server.host}")
 
 # connect mysql server
 db = mysql.connector.connect(
-    host="100.100.10.11",
-    user="lbpay",
-    password="lbpay",
-    database="billing"
+    host=os.getenv('SORM_DB_HOST'),
+    user=os.getenv('SORM_DB_USER'),
+    password=os.getenv('SORM_DB_USER'),
+    database=os.getenv('SORM_DB_NAME')
 )
 db.autocommit = True
 logging.info(f"connect to db: {db.database}")
