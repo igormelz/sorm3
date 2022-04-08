@@ -1,7 +1,0 @@
-- from:
-        uri: "file:in?delete=True"
-        steps:
-                - log: "setting next file to:${file:name}"
-                - to:
-                        uri: "sftp://igorm@10.200.10.95/test?password=Ium_7403010"
-                - log: "processed"

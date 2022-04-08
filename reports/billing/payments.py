@@ -65,7 +65,7 @@ def report_daily(db):
 def report_full(db, params=''):
     with cursor(db) as cur:
         cur.execute(QUERY_FULL + params)
-        logging.info("query full payments [{0}]".format(cur.rowcount))
+        logging.info("collect payments [{0}]".format(cur.rowcount))
         filename = format_filename(FORMAT)
         with writer(filename, FIELDS) as csvout:
             for dataRowDict in cur:
@@ -78,8 +78,8 @@ def report_full(db, params=''):
                     'amount': dataRowDict.get('amount'),
                     'amount_CURRENCY': f"{dataRowDict.get('amount'):.2f}",
                     'account': AGG_PATTERN.sub('', dataRowDict.get('contract')),
-                    # 'phone_number': PHONE_PATTERN.sub('', dataRowDict.get('mobile')),
-                    'phone_number': '790000000',
+                    'phone_number': PHONE_PATTERN.sub('', dataRowDict.get('mobile')),
+                    #'phone_number': '790000000',
                     'ABONENT_ID': dataRowDict.get('abonentId'),
                     'address_type_id': 0,  # use registered address
                     'address_type': 1,  # unstructed address
@@ -87,8 +87,8 @@ def report_full(db, params=''):
                     'RECORD_ACTION': 1,
                 }
                 csvout.writerow(outRow)
+        logging.info("flush filename:{0} [{1}]".format(filename, cur.rowcount))
         # store batch info 
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('payment', filename, cur.rowcount))
-        logging.info("flush filename: {0} [{1}]".format(filename, cur.rowcount))
         db.commit()
     return filename

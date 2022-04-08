@@ -72,7 +72,7 @@ def report_daily(db):
 def report_full(db, params=''):
     with cursor(db) as cur:
         cur.execute(QUERY_FULL + params)
-        logging.info("query full ident [{0}]".format(cur.rowcount))
+        logging.info("collect ident [{0}]".format(cur.rowcount))
         filename = format_filename(FORMAT)
         with writer(filename, FIELDS) as csvout:
             for row in cur:
@@ -91,8 +91,8 @@ def report_full(db, params=''):
                     'END_TIME': '' if row.get('end_time') == '0000-00-00 00:00:00' else row.get('end_time')
                 }
                 csvout.writerow(outRow)
+        logging.info("flush filename:{0} [{1}]".format(filename, cur.rowcount))
         # store batch info 
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('ident', filename, cur.rowcount))
-        logging.info("flush filename: {0} [{1}]".format(filename, cur.rowcount))
         db.commit()
     return filename

@@ -5,8 +5,8 @@ FIELDS = ['ID', 'MNEMONIC', 'BEGIN_TIME', 'END_TIME', 'DESCRIPTION', 'REGION_ID'
 
 
 def report():
-    print("STATIC: SUPS","." * 10, end='')
-    with writer(format_filename(FORMAT), FIELDS) as csvout:
+    filename = format_filename(FORMAT)
+    with writer(filename, FIELDS) as csvout:
         row = {
             'ID': 0,
             'MNEMONIC': 'internet',
@@ -16,4 +16,4 @@ def report():
             'REGION_ID': 1
         }
         csvout.writerow(row)
-    print("OK")
+    return filename

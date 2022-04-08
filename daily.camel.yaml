@@ -1,6 +1,0 @@
-- from:
-   uri: "timer:test"
-   parameters:
-     period: "1s"
-  steps:
-  - log: "${body}"

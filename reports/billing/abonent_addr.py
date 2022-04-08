@@ -36,7 +36,7 @@ def report(db):
 
     with cursor(db) as cur:
         cur.execute(QUERY_FULL)
-        logging.info("query full addr [{0}]".format(cur.rowcount))
+        logging.info("collect addr [{0}]".format(cur.rowcount))
         filename = format_filename(FORMAT)
         with writer(filename, FIELDS) as csvout:
             for row in cur:
@@ -51,9 +51,9 @@ def report(db):
                     'END_TIME': '2024-12-31'
                 }
                 csvout.writerow(outRow)
+        logging.info("flush filename:{0} [{1}]".format(filename, cur.rowcount))      
         # store batch info 
         cur.execute("INSERT INTO sorm_batch (batch_name, file_name, file_rec_count) VALUES (%s, %s, %s)", ('addr', filename, cur.rowcount))
-        logging.info("flush filename: {0} [{1}]".format(filename, cur.rowcount))           
         db.commit()
     return filename
 

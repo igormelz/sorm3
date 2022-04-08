@@ -12,8 +12,8 @@ FIELDS = [
 
 
 def report():
-    print("STATIC: DOC_TYPE ........ ", end='')
-    with writer(format_filename(FORMAT), FIELDS) as csvout:
+    filename = format_filename(FORMAT)
+    with writer(filename, FIELDS) as csvout:
         csvout.writerow({
             'DOC_TYPE_ID': 0,
             'BEGIN_TIME': '2019-01-01',
@@ -49,4 +49,4 @@ def report():
             'DESCRIPTION': 'Временное удостоверение личности гражданина РФ',
             'REGION_ID': 1
         })
-    print("OK")
+    return filename
