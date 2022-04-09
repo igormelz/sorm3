@@ -1,4 +1,4 @@
-from reports.utils import writer, format_filename
+from utils import writer, format_filename
 
 FORMAT = 'REGIONS_%Y%m%d_%H%M.txt'
 FIELDS = ['id', 'begin_time', 'end_time', 'description', 'MCC', 'MNC']

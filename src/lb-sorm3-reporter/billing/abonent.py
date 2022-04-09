@@ -1,4 +1,4 @@
-from reports.utils import writer, cursor, cursorDef, format_filename
+from utils import writer, cursor, cursorDef, format_filename
 from datetime import date
 import re
 import logging

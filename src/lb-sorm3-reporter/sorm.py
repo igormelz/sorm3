@@ -6,23 +6,21 @@ import sys
 import mysql.connector
 import ftplib
 import logging
+from dotenv import load_dotenv
 
-from reports.static import pay_type
-from reports.static import regions
-from reports.static import doc_type
-from reports.static import sups
+from static import pay_type, regions, doc_type, sups
+from billing import daily, payments, abonent, abonent_addr, abonent_ident, ip_plan
+from utils import cursorDef
 
-from reports.billing import daily
-from reports.billing import payments
-from reports.billing import abonent
-from reports.billing import abonent_addr
-from reports.billing import abonent_ident
-from reports.billing import ip_plan
-
-from reports.utils import cursorDef
-
+# setup console logging
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s [%(module)s]: %(message)s')
+
+# get params
+mode = sys.argv[1] if len(sys.argv[1:]) > 0 else 'daily'
+
+# process .env
+load_dotenv()
 
 # connect to ftp server
 ftp_server = ftplib.FTP(
@@ -38,7 +36,7 @@ db = mysql.connector.connect(
     host=os.getenv('SORM_DB_HOST'),
     user=os.getenv('SORM_DB_USER'),
     password=os.getenv('SORM_DB_USER'),
-    database=os.getenv('SORM_DB_NAME')
+    database='billing'
 )
 db.autocommit = True
 logging.info(f"connect to db: {db.database}")
@@ -53,21 +51,23 @@ def upload(filename):
         except ftplib.Error as ftp_error:
             logging.error(f"failed to upload: {error}")
 
+
 def full_reports():
     try:
         logging.info("start full reports")
-        
+
         # process static
         upload(doc_type.report())
         upload(pay_type.report())
         upload(regions.report())
         upload(sups.report())
 
-        # call stored proc 
+        # call stored proc
         with cursorDef(db) as cursor:
             cursor.callproc('SORM_ABONENTS')
             logging.info("call procedure to reset all tables")
 
+        # upload reports
         upload(abonent.report(db))
         upload(abonent_addr.report(db))
         upload(abonent_ident.report_full(db))
@@ -84,6 +84,7 @@ def full_reports():
         ftp_server.quit()
         logging.info("end full reports")
 
+
 def daily_reports():
     try:
         logging.info("start daily reports")
@@ -91,7 +92,7 @@ def daily_reports():
         # preprocess daily contracts
         daily.pre_process(db)
 
-        # process reports:
+        # upload reports:
         upload(ip_plan.report_daily(db))
         upload(abonent.report(db))
         upload(abonent_addr.report(db))
@@ -110,8 +111,6 @@ def daily_reports():
 
 
 if __name__ == "__main__":
-    # get params
-    mode = sys.argv[1] if len(sys.argv[1:]) > 0 else 'daily'
     if mode == 'full':
         full_reports()
     else:

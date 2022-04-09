@@ -1,4 +1,4 @@
-from reports.utils import writer, cursor, format_filename
+from utils import writer, cursor, format_filename
 import logging
 
 FORMAT = 'IP_PLAN_%Y%m%d_%H%M.txt'

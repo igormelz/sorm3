@@ -1,4 +1,4 @@
-from reports.utils import cursor, cursorDef
+from utils import cursor, cursorDef
 import logging
 
 QUERY_AGRM = '''

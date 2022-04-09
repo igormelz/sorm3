@@ -1,4 +1,4 @@
-from reports.utils import writer, format_filename
+from utils import writer, format_filename
 
 # report name format
 FORMAT = 'DOC_TYPE_%Y%m%d_%H%M.txt'

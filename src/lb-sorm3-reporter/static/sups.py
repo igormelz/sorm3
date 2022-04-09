@@ -1,4 +1,4 @@
-from reports.utils import writer, format_filename
+from utils import writer, format_filename
 
 FORMAT = 'SUPPLEMENTARY_SERVICE_%Y%m%d_%H%M.txt'
 FIELDS = ['ID', 'MNEMONIC', 'BEGIN_TIME', 'END_TIME', 'DESCRIPTION', 'REGION_ID']
