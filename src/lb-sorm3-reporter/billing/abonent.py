@@ -73,7 +73,8 @@ def report(db):
                     'ATTACH': row.get('attach'),
                     'DETACH': row.get('detach') if row.get('contractState') != 0 else '',
                     'ACTUAL_FROM': '2019-04-01',
-                    'ACTUAL_TO': str(date.today()),
+                    #'ACTUAL_TO': str(date.today()),
+                    'ACTUAL_TO': str(row.get('detach'))[:10] if row.get('contractState') != 0 else '',
                     'NETWORK_TYPE': 4,
                     'RECORD_ACTION': row.get('record_action')
                 }

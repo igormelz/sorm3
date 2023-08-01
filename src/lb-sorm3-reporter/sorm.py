@@ -9,7 +9,7 @@ import logging
 from dotenv import load_dotenv
 
 from static import pay_type, regions, doc_type, sups
-from billing import daily, payments, abonent, abonent_addr, abonent_ident, ip_plan
+from billing import daily, payments, abonent, abonent_addr, abonent_ident, ip_plan, abonent_srv, switches
 from utils import cursorDef
 
 # setup console logging
@@ -70,9 +70,11 @@ def full_reports():
         # upload reports
         upload(abonent.report(db))
         upload(abonent_addr.report(db))
-        upload(abonent_ident.report_full(db))
+        upload(switches.report_full(db))
+        upload(abonent_srv.report_full(db))
         upload(payments.report_full(db))
         upload(ip_plan.report_full(db))
+        upload(abonent_ident.report_full(db))
 
     except mysql.connector.Error as error:
         logging.error(f"failed to execute: {error}")
@@ -93,11 +95,13 @@ def daily_reports():
         daily.pre_process(db)
 
         # upload reports:
-        upload(ip_plan.report_daily(db))
         upload(abonent.report(db))
         upload(abonent_addr.report(db))
-        upload(abonent_ident.report_daily(db))
+        upload(switches.report_daily(db))
+        upload(abonent_srv.report_daily(db))
         upload(payments.report_daily(db))
+        upload(ip_plan.report_daily(db))
+        upload(abonent_ident.report_daily(db))
 
     except mysql.connector.Error as error:
         logging.error(f"failed to execute: {error}")
